@@ -6,20 +6,18 @@
 /*----------------------------------------------------------------------------*/
 
 package edu.wpi.first.wpilibj.templates;
- 
-import edu.wpi.first.wpilibj.Joystick; 
-import edu.wpi.first.wpilibj.RobotDrive; 
-import edu.wpi.first.wpilibj.SimpleRobot; 
-import edu.wpi.first.wpilibj.Timer; 
 
-
+import edu.wpi.first.wpilibj.Joystick;
+import edu.wpi.first.wpilibj.RobotDrive;
+import edu.wpi.first.wpilibj.SimpleRobot;
+import edu.wpi.first.wpilibj.Timer;
 
 public class RobotTemplate extends SimpleRobot {
-    
+
     RobotDrive drive = new RobotDrive(1, 2);
-    Joystick rightStick = new Joystick(1);
-    Joystick leftStick = new Joystick(2);
-    
+    Joystick leftStick = new Joystick(1);
+    Joystick rightStick = new Joystick(2);
+
     public void autonomous() {
         //temporary randomness
         for (int i = 0; i < 4; i++) {
@@ -30,7 +28,7 @@ public class RobotTemplate extends SimpleRobot {
         }
         drive.drive(0.0, 0.0);
     }
-    
+
     public void operatorControl() {
         while (isOperatorControl() && isEnabled())
         {
