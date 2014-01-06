@@ -5,14 +5,14 @@
 /* the project.                                                               */
 /*----------------------------------------------------------------------------*/
 
-package edu.wpi.first.wpilibj.templates;
+package com.carobotics;
 
 import edu.wpi.first.wpilibj.Joystick;
 import edu.wpi.first.wpilibj.RobotDrive;
 import edu.wpi.first.wpilibj.SimpleRobot;
 import edu.wpi.first.wpilibj.Timer;
 
-public class RobotTemplate extends SimpleRobot {
+public class RobotMain extends SimpleRobot {
 
     RobotDrive drive = new RobotDrive(1, 2);
     Joystick leftStick = new Joystick(1);
