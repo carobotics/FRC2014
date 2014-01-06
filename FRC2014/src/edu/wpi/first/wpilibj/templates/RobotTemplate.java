@@ -15,26 +15,28 @@ import edu.wpi.first.wpilibj.Timer;
 
 
 public class RobotTemplate extends SimpleRobot {
- 
+    
     RobotDrive drive = new RobotDrive(1, 2);
     Joystick rightStick = new Joystick(1);
-    Joystick leftStick = new Joystick(1);
- 
+    Joystick leftStick = new Joystick(2);
+    
     public void autonomous() {
-        for (int i = 0; i < 4; i++) { 
-            drive.drive(0.5, 0.0);
-            Timer.delay(2.0);
-            drive.drive(0.0, 0.75);
+        //temporary randomness
+        for (int i = 0; i < 4; i++) {
+            drive.drive(0.5, 0.0); //.drive(percent_forward, percent_turn)
+            Timer.delay(0.5);
+            drive.drive(-0.5, 0.0);
+            Timer.delay(0.5);
         }
         drive.drive(0.0, 0.0);
-    } 
- 
-    public void operatorControl() { 
+    }
+    
+    public void operatorControl() {
         while (isOperatorControl() && isEnabled())
-        { 
+        {
             //drive.arcadeDrive(stick);
             drive.tankDrive(leftStick, rightStick);
-            Timer.delay(0.005); 
+            Timer.delay(0.005); //do not delete
         }
     }
 }
