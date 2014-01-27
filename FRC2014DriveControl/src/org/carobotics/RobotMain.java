@@ -25,44 +25,14 @@ public class RobotMain extends SimpleRobot {
     RobotDrive drive = new RobotDrive(1, 2);
     Joystick rightStick = new Joystick(1);
     Joystick leftStick = new Joystick(2);
-    boolean oneStickDrive = false;
-    String oneStickDriveKey = "OneStickDrive";
-    
-    protected void robotInit() {
-        super.robotInit();
-        SmartDashboard.putBoolean(oneStickDriveKey, false);
-    }
 
     public void autonomous() {
-        //temporary randomness
-        for (int i = 0; i < 4; i++) {
-            drive.drive(0.5, 0.0); //.drive(percent_forward, percent_turn)
-            Timer.delay(0.5);
-            drive.drive(-0.5, 0.0);
-            Timer.delay(0.5);
-        }
-        drive.drive(0.0, 0.0);
     }
 
     public void operatorControl() {
         while (isOperatorControl() && isEnabled()) {
-            try {
-                oneStickDrive = SmartDashboard.getBoolean(oneStickDriveKey);
-                //oneStickDrive = prefs.getString("OneStickDrive", "false").equalsIgnoreCase("true");
-            } catch (Throwable t) {
-                t.printStackTrace();
-            }
-            oneStickDrive = leftStick.getThrottle() > 0.5;
-            //drive.arcadeDrive(stick);
-            double mult = 1.0;
-            if(rightStick.getTrigger() || leftStick.getTrigger()) { mult = 0.5; }
-            if (oneStickDrive) {
-                double turnAmt = leftStick.getZ();
-                if (Math.abs(leftStick.getX()) > Math.abs(turnAmt)) turnAmt = leftStick.getX();
-                drive.drive(leftStick.getY() * mult, turnAmt * -1);
-            } else {
-                drive.tankDrive(leftStick.getY() * mult, rightStick.getY() * mult);
-            }
+            double mult = rightStick.getThrottle();
+            drive.tankDrive(rightStick.getY() * mult, leftStick.getY() * mult);
             Timer.delay(0.005); //do not delete
         }
     }
