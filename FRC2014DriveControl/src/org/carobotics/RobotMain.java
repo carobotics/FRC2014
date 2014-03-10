@@ -45,6 +45,9 @@ public class RobotMain extends SimpleRobot {
     Compressor compressor = new Compressor(1, 1);
     AxisCamera camera;
     boolean driveReverse = false;
+    double rightDrive = 0.0;
+    double leftDrive = 0.0;
+    double driveSmoothVel = 0.1;
     
     public void robotInit() {
         camera = AxisCamera.getInstance();
@@ -53,8 +56,14 @@ public class RobotMain extends SimpleRobot {
 
     public void autonomous() {
         System.out.println("Autonomous mode.");
-        while (isAutonomous() && isEnabled()) {
-            
+        if (isAutonomous() && isEnabled()) {
+            drive.arcadeDrive(0.5, 0.0);
+            try {
+                Thread.sleep(1 * 1000);
+            } catch (InterruptedException e) {
+                System.out.println("ERROR: Sleep was interrupted!");
+            }
+            drive.arcadeDrive(0.0, 0.0);
         }
     }
 
@@ -62,32 +71,46 @@ public class RobotMain extends SimpleRobot {
         System.out.println("Operator control.");
         while (isOperatorControl() && isEnabled()) {
             
-            //main driving
+            //START: Main Driving
             if (bdriveNormal.get()) { driveReverse = false; System.out.println("Normal"); }
             if (bdriveReverse.get()) { driveReverse = true; System.out.println("Reverse"); }
-            double mult = rightStick.getThrottle();
-            if (leftStick.getTrigger() || rightStick.getTrigger()) mult = 0.5;
-            double rightDrive = rightStick.getY() * -1;
-            double leftDrive = leftStick.getY() * -1;
+            double mult = (rightStick.getThrottle() + 1) / 2;
+            if (leftStick.getTrigger() || rightStick.getTrigger()) mult = 0.0;
+            double rightVal = rightStick.getY();
+            double leftVal = leftStick.getY();
+            //acceleration smoothing
+            double rightDif = rightVal - rightDrive;
+            double leftDif = leftVal - leftDrive;
+            if (Math.abs(rightDif) > driveSmoothVel) {
+                int rightDir = (int) (rightDif / Math.abs(rightDif));
+                rightDrive += driveSmoothVel * rightDir;
+            }
+            if (Math.abs(leftDif) > driveSmoothVel) {
+                int leftDir = (int) (leftDif / Math.abs(leftDif));
+                leftDrive += driveSmoothVel * leftDir;
+            }
+            //drive reverse
             if (driveReverse) {
-                
                 double tmp = rightDrive;
                 rightDrive = leftDrive * -1;
                 leftDrive = tmp * -1;
             }
-            drive.tankDrive(rightDrive * mult, leftDrive * mult);
+            drive.tankDrive(leftDrive * mult, rightDrive * mult);
+            //END: Main Driving
             
-            //arm control
+            //START: Arm control
             double fullArm = 1.0;
             double armAmt = 0.0;
             if (barmsUp.get()) { armAmt = fullArm; }
             else if (barmsDown.get()) { armAmt = fullArm * -1; }
             arms.set(armAmt);
+            //END: Arm control
             
-            //compresser/launching control
+            //START: Compresser/launching control
             if (bcompressOn.get() && !compressor.enabled()) { compressor.start(); }
             else if (bcompressOff.get() && compressor.enabled()) { compressor.stop(); }
             launcher.set(blaunch.get());
+            //END: Compresser/launching control
             
             Timer.delay(0.005); //do not delete
         }
