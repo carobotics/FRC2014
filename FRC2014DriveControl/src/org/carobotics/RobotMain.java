@@ -8,19 +8,14 @@
 package org.carobotics;
 
 import edu.wpi.first.wpilibj.Compressor;
+import edu.wpi.first.wpilibj.Jaguar;
 import edu.wpi.first.wpilibj.Joystick;
-import edu.wpi.first.wpilibj.Relay;
 import edu.wpi.first.wpilibj.RobotDrive;
 import edu.wpi.first.wpilibj.SimpleRobot;
 import edu.wpi.first.wpilibj.Solenoid;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.buttons.JoystickButton;
 import edu.wpi.first.wpilibj.camera.AxisCamera;
-import edu.wpi.first.wpilibj.image.BinaryImage;
-import edu.wpi.first.wpilibj.image.ColorImage;
-import edu.wpi.first.wpilibj.image.EllipseMatch;
-import edu.wpi.first.wpilibj.image.EllipseDescriptor;
-import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 
 /**
  * The VM is configured to automatically run this class, and to call the
@@ -36,15 +31,11 @@ public class RobotMain extends SimpleRobot {
     public static final double HEIGHT = 240;
 
     RobotDrive drive = new RobotDrive(1, 2);
-    RobotDrive arms = new RobotDrive(3, 4);
+    Jaguar arms = new Jaguar(3);
     Joystick rightStick = new Joystick(1);
     Joystick leftStick = new Joystick(2);
     JoystickButton barmsUp = new JoystickButton(leftStick, 3);
     JoystickButton barmsDown = new JoystickButton(leftStick, 2);
-    JoystickButton bleftUp = new JoystickButton(rightStick, 5);
-    JoystickButton bleftDown = new JoystickButton(rightStick, 3);
-    JoystickButton brightUp = new JoystickButton(rightStick, 6);
-    JoystickButton brightDown = new JoystickButton(rightStick, 4);
     JoystickButton blaunch = new JoystickButton(rightStick, 2);
     JoystickButton bcompressOn = new JoystickButton(leftStick, 11);
     JoystickButton bcompressOff = new JoystickButton(leftStick, 10);
@@ -63,43 +54,7 @@ public class RobotMain extends SimpleRobot {
     public void autonomous() {
         System.out.println("Autonomous mode.");
         while (isAutonomous() && isEnabled()) {
-            SmartDashboard.putString("Name", "GLaDOS");
-            try {
-                ColorImage image = camera.getImage();
-                //BinaryImage thresholdImage = image.thresholdRGB(25, 255, 0, 47, 0, 47);   // keep only red objects
-                BinaryImage thresholdImage = image.thresholdRGB(0, 60, 0, 60, 10, 255);   // keep only red objects
-                BinaryImage bigObjectsImage = thresholdImage.removeSmallObjects(false, 2);// remove small artifacts
-                BinaryImage convexHullImage = bigObjectsImage.convexHull(false);          // fill in occluded rectangles
-
-                double min = HEIGHT / 20.0;
-                double max = HEIGHT;
-                EllipseMatch[] matches = convexHullImage.detectEllipses(new EllipseDescriptor(min, max, min, max));
-                double midX = WIDTH / 2.0;
-                double midY = HEIGHT / 2.0;
-                if (matches.length > 0) {
-                EllipseMatch ball = matches[0];
-                    for (int i = 1; i < matches.length; i++) {
-                        EllipseMatch myBall = matches[i];
-                        if (myBall.m_majorRadius > ball.m_majorRadius) ball = myBall;
-                    }
-                    double x = ball.m_xPos - midX;
-                    double y = ball.m_yPos - midY;
-                    System.out.println("x: " + x + ", y: " + y);
-                } else {
-                    System.out.println("No balls found!");
-                }
-
-                convexHullImage.free();
-                bigObjectsImage.free();
-                thresholdImage.free();
-                image.free();
-
-        //            } catch (AxisCameraException ex) {        // this is needed if the camera.getImage() is called
-        //                ex.printStackTrace();
-            } catch (Throwable e) {
-                System.out.println("Error!");
-                e.printStackTrace();
-            }
+            
         }
     }
 
@@ -124,17 +79,10 @@ public class RobotMain extends SimpleRobot {
             
             //arm control
             double fullArm = 1.0;
-            double leftArm = 0.0;
-            double rightArm = 0.0;
-            if (barmsUp.get()) { leftArm = rightArm = fullArm; }
-            else if (barmsDown.get()) { leftArm = rightArm = fullArm * -1; }
-            else {
-                if (bleftUp.get()) leftArm = fullArm;
-                if (bleftDown.get()) leftArm = fullArm * -1;
-                if (brightUp.get()) rightArm = fullArm;
-                if (brightDown.get()) rightArm = fullArm * -1;
-            }
-            arms.setLeftRightMotorOutputs(leftArm, rightArm);
+            double armAmt = 0.0;
+            if (barmsUp.get()) { armAmt = fullArm; }
+            else if (barmsDown.get()) { armAmt = fullArm * -1; }
+            arms.set(armAmt);
             
             //compresser/launching control
             if (bcompressOn.get() && !compressor.enabled()) { compressor.start(); }
