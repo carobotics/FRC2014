@@ -47,7 +47,7 @@ public class RobotMain extends SimpleRobot {
     boolean driveReverse = false;
     double rightDrive = 0.0;
     double leftDrive = 0.0;
-    double driveSmoothVel = 0.1;
+    double driveSmoothVel = 0.05;
     
     public void robotInit() {
         camera = AxisCamera.getInstance();
@@ -99,7 +99,7 @@ public class RobotMain extends SimpleRobot {
             //END: Main Driving
             
             //START: Arm control
-            double fullArm = 1.0;
+            double fullArm = (leftStick.getThrottle() + 1) / 2;
             double armAmt = 0.0;
             if (barmsUp.get()) { armAmt = fullArm; }
             else if (barmsDown.get()) { armAmt = fullArm * -1; }
