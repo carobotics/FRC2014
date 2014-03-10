@@ -7,10 +7,12 @@
 
 package org.carobotics;
 
+import edu.wpi.first.wpilibj.Compressor;
 import edu.wpi.first.wpilibj.Joystick;
 import edu.wpi.first.wpilibj.Relay;
 import edu.wpi.first.wpilibj.RobotDrive;
 import edu.wpi.first.wpilibj.SimpleRobot;
+import edu.wpi.first.wpilibj.Solenoid;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.buttons.JoystickButton;
 import edu.wpi.first.wpilibj.camera.AxisCamera;
@@ -37,21 +39,25 @@ public class RobotMain extends SimpleRobot {
     RobotDrive arms = new RobotDrive(3, 4);
     Joystick rightStick = new Joystick(1);
     Joystick leftStick = new Joystick(2);
-    JoystickButton armsUp = new JoystickButton(leftStick, 3);
-    JoystickButton armsDown = new JoystickButton(leftStick, 2);
-    JoystickButton leftUp = new JoystickButton(rightStick, 5);
-    JoystickButton leftDown = new JoystickButton(rightStick, 3);
-    JoystickButton rightUp = new JoystickButton(rightStick, 6);
-    JoystickButton rightDown = new JoystickButton(rightStick, 4);
-    JoystickButton launch = new JoystickButton(rightStick, 2);
-    JoystickButton compressOn = new JoystickButton(leftStick, 11);
-    JoystickButton compressOff = new JoystickButton(leftStick, 10);
-    boolean compresser = false;
-    Relay relay = new Relay(1);
+    JoystickButton barmsUp = new JoystickButton(leftStick, 3);
+    JoystickButton barmsDown = new JoystickButton(leftStick, 2);
+    JoystickButton bleftUp = new JoystickButton(rightStick, 5);
+    JoystickButton bleftDown = new JoystickButton(rightStick, 3);
+    JoystickButton brightUp = new JoystickButton(rightStick, 6);
+    JoystickButton brightDown = new JoystickButton(rightStick, 4);
+    JoystickButton blaunch = new JoystickButton(rightStick, 2);
+    JoystickButton bcompressOn = new JoystickButton(leftStick, 11);
+    JoystickButton bcompressOff = new JoystickButton(leftStick, 10);
+    JoystickButton bdriveNormal = new JoystickButton(leftStick, 6);
+    JoystickButton bdriveReverse = new JoystickButton(leftStick, 7);
+    Solenoid launcher = new Solenoid(1);
+    Compressor compressor = new Compressor(1, 1);
     AxisCamera camera;
+    boolean driveReverse = false;
     
     public void robotInit() {
         camera = AxisCamera.getInstance();
+        compressor.start();
     }
 
     public void autonomous() {
@@ -102,11 +108,14 @@ public class RobotMain extends SimpleRobot {
         while (isOperatorControl() && isEnabled()) {
             
             //main driving
+            if (bdriveNormal.get()) { driveReverse = false; System.out.println("Normal"); }
+            if (bdriveReverse.get()) { driveReverse = true; System.out.println("Reverse"); }
             double mult = rightStick.getThrottle();
             if (leftStick.getTrigger() || rightStick.getTrigger()) mult = 0.5;
-            double rightDrive = rightStick.getY();
-            double leftDrive = leftStick.getY();
-            if (leftStick.getThrottle() < 0.5) {
+            double rightDrive = rightStick.getY() * -1;
+            double leftDrive = leftStick.getY() * -1;
+            if (driveReverse) {
+                
                 double tmp = rightDrive;
                 rightDrive = leftDrive * -1;
                 leftDrive = tmp * -1;
@@ -117,30 +126,20 @@ public class RobotMain extends SimpleRobot {
             double fullArm = 1.0;
             double leftArm = 0.0;
             double rightArm = 0.0;
-            if (armsUp.get()) { leftArm = rightArm = fullArm; }
-            else if (armsDown.get()) { leftArm = rightArm = fullArm * -1; }
+            if (barmsUp.get()) { leftArm = rightArm = fullArm; }
+            else if (barmsDown.get()) { leftArm = rightArm = fullArm * -1; }
             else {
-                if (leftUp.get()) leftArm = fullArm;
-                if (leftDown.get()) leftArm = fullArm * -1;
-                if (rightUp.get()) rightArm = fullArm;
-                if (rightDown.get()) rightArm = fullArm * -1;
+                if (bleftUp.get()) leftArm = fullArm;
+                if (bleftDown.get()) leftArm = fullArm * -1;
+                if (brightUp.get()) rightArm = fullArm;
+                if (brightDown.get()) rightArm = fullArm * -1;
             }
             arms.setLeftRightMotorOutputs(leftArm, rightArm);
             
             //compresser/launching control
-            if (compressOn.get()) { compresser = true; }
-            else if (compressOff.get()) { compresser = false; }
-            boolean forward = launch.get();
-            boolean backwards = compresser;
-            Relay.Value value = Relay.Value.kOff;
-            if (forward && backwards) {
-                value = Relay.Value.kOn;
-            } else if (forward) {
-                value = Relay.Value.kForward;
-            } else if (backwards) {
-                value = Relay.Value.kReverse;
-            }
-            relay.set(value);
+            if (bcompressOn.get() && !compressor.enabled()) { compressor.start(); }
+            else if (bcompressOff.get() && compressor.enabled()) { compressor.stop(); }
+            launcher.set(blaunch.get());
             
             Timer.delay(0.005); //do not delete
         }
