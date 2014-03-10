@@ -39,8 +39,8 @@ public class RobotMain extends SimpleRobot {
     JoystickButton blaunch = new JoystickButton(rightStick, 2);
     JoystickButton bcompressOn = new JoystickButton(leftStick, 11);
     JoystickButton bcompressOff = new JoystickButton(leftStick, 10);
-    JoystickButton bdriveNormal = new JoystickButton(leftStick, 6);
-    JoystickButton bdriveReverse = new JoystickButton(leftStick, 7);
+    JoystickButton bdriveReverseToggle = new JoystickButton(leftStick, 6);
+    boolean previousDriveReverseToggle = false;
     Solenoid launcher = new Solenoid(1);
     Compressor compressor = new Compressor(1, 1);
     AxisCamera camera;
@@ -72,8 +72,14 @@ public class RobotMain extends SimpleRobot {
         while (isOperatorControl() && isEnabled()) {
             
             //START: Main Driving
-            if (bdriveNormal.get()) { driveReverse = false; System.out.println("Normal"); }
-            if (bdriveReverse.get()) { driveReverse = true; System.out.println("Reverse"); }
+            //reverse toggling
+            boolean reverseToggle = bdriveReverseToggle.get();
+            if (reverseToggle && !previousDriveReverseToggle) {
+                driveReverse = !driveReverse;
+                System.out.println("Reverse toggled to: " + reverseToggle);
+            }
+            previousDriveReverseToggle = reverseToggle;
+            //main driving
             double mult = (rightStick.getThrottle() + 1) / 2;
             if (leftStick.getTrigger() || rightStick.getTrigger()) mult = 0.0;
             double rightVal = rightStick.getY();
