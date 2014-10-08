@@ -17,6 +17,7 @@ import edu.wpi.first.wpilibj.Victor;
 import edu.wpi.first.wpilibj.buttons.JoystickButton;
 import edu.wpi.first.wpilibj.camera.AxisCamera;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
+import java.util.Date;
 
 /**
  * The VM is configured to automatically run this class, and to call the
@@ -43,17 +44,28 @@ public class RobotMain extends SimpleRobot {
     JoystickButton bcompressOff = new JoystickButton(leftStick, 10);
     JoystickButton bdriveReverseToggle = new JoystickButton(leftStick, 6);
     boolean previousDriveReverseToggle = false;
-    Solenoid launcher = new Solenoid(1);
+    boolean launching = false;
+    long launchTime = 0;
+    boolean resetting = false;
+    Solenoid resetter = new Solenoid(1);
+    Solenoid launcher = new Solenoid(2);
     Compressor compressor = new Compressor(1, 1);
     AxisCamera camera;
     boolean driveReverse = false;
     double rightDrive = 0.0;
     double leftDrive = 0.0;
     double driveSmoothVel = 0.05;
+    double drivingMult = 1.0;
+    long dashValUpdateTime = 0;
+    
+    public void print(String msg) {
+        System.out.println(msg);
+    }
     
     public void robotInit() {
         camera = AxisCamera.getInstance();
         compressor.start();
+        print("Initializing...");
     }
 
     public void autonomous() {
@@ -67,11 +79,22 @@ public class RobotMain extends SimpleRobot {
         }
     }
 
-    public void operatorControl() {
+    public void operatorControl() { 
         System.out.println("Operator control.");
-        SmartDashboard.putString("foo", "bar");
-        SmartDashboard.putBoolean("NotABoolean", true);
+        SmartDashboard.putBoolean("Compressor", true);
+        SmartDashboard.putNumber("DrivingMultiplier", 1.0);
+        SmartDashboard.putNumber("DriveAcceleration", 0.05);
+        SmartDashboard.putBoolean("IsFiring", false);
+        SmartDashboard.putBoolean("IsResetting", false);
         while (isOperatorControl() && isEnabled()) {
+            long curTime = new Date().getTime();
+            
+            if (curTime > dashValUpdateTime + 1000) {
+                drivingMult = SmartDashboard.getNumber("DrivingMultiplier");
+                driveSmoothVel = SmartDashboard.getNumber("DriveAcceleration");
+            } else {
+                dashValUpdateTime = curTime;
+            }
             
             //START: Main Driving
             //reverse toggling
@@ -82,8 +105,6 @@ public class RobotMain extends SimpleRobot {
             }
             previousDriveReverseToggle = reverseToggle;
             //main driving
-            double mult = 1.0;//((rightStick.getThrottle() * -1) + 1) / 2;
-            if (leftStick.getTrigger() || rightStick.getTrigger()) mult = 0.0;
             double rightVal = rightStick.getY();
             double leftVal = leftStick.getY();
             //acceleration smoothing
@@ -97,16 +118,10 @@ public class RobotMain extends SimpleRobot {
                 int leftDir = (int) (leftDif / Math.abs(leftDif));
                 leftDrive += driveSmoothVel * leftDir;
             }
-            //drive reverse
-//            if (driveReverse) {
-//                double tmp = rightDrive;
-//                rightDrive = leftDrive * -1;
-//                leftDrive = tmp * -1;
-//            }
             if (!driveReverse)
-                drive.tankDrive(rightDrive * mult, leftDrive * mult);
+                drive.tankDrive(rightDrive * drivingMult, leftDrive * drivingMult);
             else
-                drive.tankDrive(-leftDrive * mult, -rightDrive * mult);
+                drive.tankDrive(-leftDrive * drivingMult, -rightDrive * drivingMult);
             //END: Main Driving
             
             //START: Arm control
@@ -119,11 +134,46 @@ public class RobotMain extends SimpleRobot {
             arm2.set(armAmt);
             //END: Arm control
             
-            //START: Compresser/launching control
-            if (bcompressOn.get() && !compressor.enabled()) { compressor.start(); }
-            else if (bcompressOff.get() && compressor.enabled()) { compressor.stop(); }
-            launcher.set(blaunch.get());
-            //END: Compresser/launching control
+            //START: Compressor control
+            if (bcompressOn.get() && !compressor.enabled()) { compressor.start(); SmartDashboard.putBoolean("Compressor", true);}
+            else if (bcompressOff.get() && compressor.enabled()) { compressor.stop(); SmartDashboard.putBoolean("Compressor", false);}
+            //END: Compressor control
+            
+            //START: Solenoid control
+            if (launching) {
+                if (curTime >= launchTime + 2000) {
+                    launching = false;
+                    resetting = true;
+                    SmartDashboard.putBoolean("IsFiring", false);
+                    SmartDashboard.putBoolean("IsResetting", true);
+                } else if (curTime >= launchTime + 1000) {
+                    resetter.set(false);
+                    launcher.set(false);
+                } else {
+                    resetter.set(false);
+                    launcher.set(true);
+                }
+            } else if (resetting) {
+                if (curTime >= launchTime + 3000) {
+                    launcher.set(false);
+                    resetter.set(false);
+                    resetting = false;
+                    SmartDashboard.putBoolean("IsResetting", false);
+                } else {
+                    launcher.set(false);
+                    resetter.set(true);
+                }
+            } else {
+                if (blaunch.get()) {
+                    launching = true;
+                    launchTime = new Date().getTime();
+                    SmartDashboard.putBoolean("IsFiring", true);
+                } else {
+                    resetter.set(false);
+                    launcher.set(false);
+                }
+            }
+            //END: Solenoid control
             
             Timer.delay(0.005); //do not delete
         }
