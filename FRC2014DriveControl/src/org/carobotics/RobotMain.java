@@ -46,9 +46,10 @@ public class RobotMain extends SimpleRobot {
     boolean previousDriveReverseToggle = false;
     boolean launching = false;
     long launchTime = 0;
-    boolean resetting = false;
-    Solenoid resetter = new Solenoid(1);
-    Solenoid launcher = new Solenoid(2);
+    Solenoid resetterRight = new Solenoid(1);
+    Solenoid launcherRight = new Solenoid(2);
+    Solenoid resetterLeft = new Solenoid(3);
+    Solenoid launcherLeft = new Solenoid(4);
     Compressor compressor = new Compressor(1, 1);
     AxisCamera camera;
     boolean driveReverse = false;
@@ -85,7 +86,6 @@ public class RobotMain extends SimpleRobot {
         SmartDashboard.putNumber("DrivingMultiplier", 1.0);
         SmartDashboard.putNumber("DriveAcceleration", 0.05);
         SmartDashboard.putBoolean("IsFiring", false);
-        SmartDashboard.putBoolean("IsResetting", false);
         while (isOperatorControl() && isEnabled()) {
             long curTime = new Date().getTime();
             
@@ -143,25 +143,12 @@ public class RobotMain extends SimpleRobot {
             if (launching) {
                 if (curTime >= launchTime + 2000) {
                     launching = false;
-                    resetting = true;
                     SmartDashboard.putBoolean("IsFiring", false);
-                    SmartDashboard.putBoolean("IsResetting", true);
-                } else if (curTime >= launchTime + 1000) {
-                    resetter.set(false);
-                    launcher.set(false);
+                    launcher(false);
+                    resetter(true);
                 } else {
-                    resetter.set(false);
-                    launcher.set(true);
-                }
-            } else if (resetting) {
-                if (curTime >= launchTime + 3000) {
-                    launcher.set(false);
-                    resetter.set(false);
-                    resetting = false;
-                    SmartDashboard.putBoolean("IsResetting", false);
-                } else {
-                    launcher.set(false);
-                    resetter.set(true);
+                    resetter(false);
+                    launcher(true);
                 }
             } else {
                 if (blaunch.get()) {
@@ -169,13 +156,23 @@ public class RobotMain extends SimpleRobot {
                     launchTime = new Date().getTime();
                     SmartDashboard.putBoolean("IsFiring", true);
                 } else {
-                    resetter.set(false);
-                    launcher.set(false);
+                    resetter(false);
+                    launcher(false);
                 }
             }
             //END: Solenoid control
             
             Timer.delay(0.005); //do not delete
         }
+    }
+
+    public void resetter(boolean state) {
+        resetterRight.set(state);
+        resetterLeft.set(state);
+    }
+
+    public void launcher(boolean state) {
+        launcherRight.set(state);
+        launcherLeft.set(state);
     }
 }
